@@ -4,8 +4,9 @@
 # Author: 101Stress
 # Date: 28/02/2024
 
-source colors
-source default_variable
+lpath=$(dirname $0)
+source $lpath/colors
+source $lpath/default_variable
 
 #  _____              ______         _                   
 # |  __ \            |  ____|       | |                  
