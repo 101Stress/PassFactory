@@ -4,7 +4,7 @@
 
 1. **Clone the repository:**
    ```bash
-   git clone xxx
+   git clone git@github.com:101Stress/PassFactory.git
    cd PassFactory/
    ```
 
