@@ -1,0 +1,7 @@
+#!/bin/bash
+
+length=32
+random_length=0
+special=1
+count=1
+verbos=0
