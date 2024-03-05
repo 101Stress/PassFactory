@@ -1,0 +1,141 @@
+#!/bin/bash
+
+# PassFactory
+# Author: 101Stress
+# Date: 28/02/2024
+
+source colors
+source default_variable
+
+#  _____              ______         _                   
+# |  __ \            |  ____|       | |                  
+# | |__) |_ _ ___ ___| |__ __ _  ___| |_ ___  _ __ _   _ 
+# |  ___/ _` / __/ __|  __/ _` |/ __| __/ _ \| '__| | | |
+# | |  | (_| \__ \__ \ | | (_| | (__| || (_) | |  | |_| |
+# |_|   \__,_|___/___/_|  \__,_|\___|\__\___/|_|   \__, |
+#                                                   __/ |
+#                                                  |___/ 
+
+#Parsing args
+while getopts ":L:l:n:svh" opt; do
+    case $opt in
+        L)
+            length=$OPTARG
+            ;;
+        l)
+            IFS=':' read -ra range <<< "$OPTARG"
+            min_length=${range[0]}
+            max_length=${range[1]}
+            random_length=1
+            ;;
+        s)
+            special=0
+            ;;
+        n)
+            count=$OPTARG
+            ;;
+        v)
+            verbos=1
+            echo " _____              ______         _                   ";
+            echo "|  __ \            |  ____|       | |                  ";
+            echo "| |__) |_ _ ___ ___| |__ __ _  ___| |_ ___  _ __ _   _ ";
+            echo "|  ___/ _  / __/ __|  __/ _\` |/ __| __/ _ \| '__| | | |";
+            echo "| |  | (_| \__ \__ \ | | (_| | (__| || (_) | |  | |_| |";
+            echo "|_|   \__,_|___/___/_|  \__,_|\___|\__\___/|_|   \__, |";
+            echo "                                                  __/ |";
+            echo "                                                 |___/ ";
+            ;;
+        h)
+            echo -e "${GREEN}NAME${RESET}"
+            echo -e "   ${CYAN}PassFactory${RESET}"
+            echo -e "${GREEN}SYNOPSIS${RESET}"
+            echo -e "   ${CYAN}pf [OPTION]${RESET}"
+            echo -e "${GREEN}DESCRIPTION${RESET}"
+            echo -e "   ${CYAN}PassFactory is a password generation tool with various options to customize the generated passwords.${RESET}\n"
+            echo -e "${GREEN}OPTIONS${RESET}"
+            echo -e "   ${CYAN}-h${RESET}        ${YELLOW}Display this help message.${RESET}"
+            echo -e "   ${CYAN}-L${RESET}        ${YELLOW}Set the length of the generated password (default: 32).${RESET}"
+            echo -e "   ${CYAN}-l${RESET}        ${YELLOW}Set the range of the length of the generated password between x:y (default: 32).${RESET}"
+            echo -e "   ${CYAN}-s${RESET}        ${YELLOW}Disable symbols in the generated password (on by default).${RESET}"
+            echo -e "   ${CYAN}-n${RESET}        ${YELLOW}Generate n passwords.${RESET}"
+            echo -e "   ${CYAN}-v${RESET}        ${YELLOW}Implement verbose mode and enhance password strength estimation with entropy calculation.${RESET}"
+
+            exit
+            ;;
+        \?)
+            echo -e "${RED}Invalid option: -$OPTARG${RESET}" >&2
+            exit 1
+            ;;
+
+    esac
+done
+
+#Generate the password
+PassFactory(){
+
+    if [[ $special -eq 1 ]]; then
+        characters="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-=_+"
+    else
+        characters="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    fi
+
+    password=""
+
+    if [[ $random_length -eq 1 ]]; then
+        length=$(( RANDOM % ($max_length - $min_length + 1) + $min_length ))
+    fi
+
+    for i in $(seq 1 $length); do
+        random=$(($RANDOM % ${#characters}))
+
+        password="$password${characters:$random:1}"
+    done
+
+    if [[ $verbos -eq 1 ]]; then
+        entropy "$password" ${#characters}
+
+    fi
+
+    echo "$password"
+}
+
+# Function to calculate entropy 
+entropy() {
+    local password="$1"
+    local size_character=$2
+    local password_length="${#password}"
+
+    local entropy_bits=$(echo "scale=2; l($size_character^$password_length)/l(2)" | bc -l)
+    #ANSSI recommends at least 128 bits of entropy for optimal security.
+    local max_entropy_bits=128
+
+    echo ""
+    echo "Entropy (bits) ≈ $entropy_bits"
+
+    # Calculate entropy percentage
+    local entropy_percentage=$(echo "scale=2; ($entropy_bits / $max_entropy_bits) * 100" | bc -l)
+
+    #Choose color of the bar
+    local color_bar=""
+    if (( $(echo "$entropy_percentage > 100" | bc -l) )); then
+        entropy_percentage=100
+        color_bar=${GREEN}
+    elif (( $(echo "$entropy_percentage > 75" | bc -l) )); then
+        color_bar=${YELLOW}
+    else
+        color_bar=${RED}
+    fi
+
+    # Create a progression bar with symbols
+    local bar_length=30
+    local filled_length=$(echo "( $entropy_percentage * $bar_length / 100)" | bc -l | xargs printf "%.0f")
+    local empty_length=$((bar_length - filled_length))
+    local filled_symbols=$(printf "%0.s*" $(seq 1 $filled_length))
+    local empty_symbols=$(printf "%0.s " $(seq 1 $empty_length))
+
+    echo -e "Strength of the password: $color_bar($entropy_percentage%) [${filled_symbols}${empty_symbols}]${RESET}"
+}
+
+for i in $(seq 1 $count); do
+    echo "$(PassFactory)"
+done
