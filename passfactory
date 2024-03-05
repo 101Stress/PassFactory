@@ -86,9 +86,7 @@ PassFactory(){
     fi
 
     for i in $(seq 1 $length); do
-        random=$(($RANDOM % ${#characters}))
-
-        password="$password${characters:$random:1}"
+        password=$(< /dev/urandom tr -dc "$characters" | head -c$length;echo;)
     done
 
     if [[ $verbos -eq 1 ]]; then
