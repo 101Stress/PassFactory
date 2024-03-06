@@ -1,4 +1,4 @@
-# PassFactoryDev
+# PassFactory
 
 ## What is recommended:
 
